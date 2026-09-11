@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+export const dynamic = 'force-dynamic'
 import RecipeList from '@/components/RecipeList'
 
 export default async function Home() {
