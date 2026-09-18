@@ -32,6 +32,18 @@ const CALORIE_RANGES: { label: string; value: [number, number] | null }[] = [
   { label: '450+', value: [450, Infinity] },
 ]
 
+const SORT_OPTIONS = [
+  { label: 'No sorting', value: '' },
+  { label: 'Calories: Low to High', value: 'calories-asc' },
+  { label: 'Calories: High to Low', value: 'calories-desc' },
+  { label: 'Protein: Low to High', value: 'protein-asc' },
+  { label: 'Protein: High to Low', value: 'protein-desc' },
+  { label: 'Carbs: Low to High', value: 'carbs-asc' },
+  { label: 'Carbs: High to Low', value: 'carbs-desc' },
+  { label: 'Fat: Low to High', value: 'fat-asc' },
+  { label: 'Fat: High to Low', value: 'fat-desc' },
+]
+
 const MEAL_COLORS: Record<string, { stripe: string; bg: string; text: string }> = {
   Breakfast: { stripe: '#6EC6E8', bg: '#E3F4FA', text: '#0C4763' },
   'Lunch/Dinner': { stripe: '#7C4DFF', bg: '#EDE7F6', text: '#5E35B1' },
@@ -48,6 +60,7 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
   const [calorieRange, setCalorieRange] = useState<[number, number] | null>(null)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [madeFilter, setMadeFilter] = useState<'' | 'made' | 'unmade'>('')
+  const [sortBy, setSortBy] = useState('')
 
   const allIngredients = useMemo(() => {
     const names = new Set<string>()
@@ -82,6 +95,19 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
     return true
   })
 
+  const sorted = useMemo(() => {
+    if (!sortBy) return filtered
+    const [field, direction] = sortBy.split('-') as [
+      'calories' | 'protein' | 'carbs' | 'fat',
+      'asc' | 'desc'
+    ]
+    return [...filtered].sort((a, b) => {
+      const aVal = a[field] ?? 0
+      const bVal = b[field] ?? 0
+      return direction === 'asc' ? aVal - bVal : bVal - aVal
+    })
+  }, [filtered, sortBy])
+
   const activeFilterCount =
     (meal ? 1 : 0) +
     (ingredient ? 1 : 0) +
@@ -105,12 +131,12 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
               Meal plan
             </Link>
             <Link
-               href="/shopping-list"
-               className="shrink-0 font-medium rounded-full"
-               style={{ fontSize: '12.5px', padding: '7px 14px', border: '1px solid #EADFCB', color: '#5C5240', backgroundColor: '#fff' }}
->
-  Shopping list
-</Link>
+              href="/shopping-list"
+              className="shrink-0 font-medium rounded-full"
+              style={{ fontSize: '12.5px', padding: '7px 14px', border: '1px solid #EADFCB', color: '#5C5240', backgroundColor: '#fff' }}
+            >
+              Shopping list
+            </Link>
             <Link
               href="/add"
               className="shrink-0 bg-[#2B2620] text-white font-medium rounded-full hover:bg-[#463D30] transition-colors"
@@ -233,7 +259,7 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
         </div>
 
         {/* Creator + favorites/made filters */}
-        <div className="flex flex-wrap" style={{ gap: '6px', marginBottom: '8px' }}>
+        <div className="flex flex-wrap" style={{ gap: '6px', marginBottom: '6px' }}>
           <select
             value={creator}
             onChange={(e) => setCreator(e.target.value)}
@@ -291,6 +317,22 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
           </button>
         </div>
 
+        {/* Sort */}
+        <div style={{ marginBottom: '8px' }}>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-white border border-[#EADFCB] rounded-full text-[#5C5240] focus:outline-none"
+            style={{ fontSize: '12.5px', padding: '6px 12px' }}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.value ? `Sort: ${o.label}` : o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {activeFilterCount > 0 && (
           <button
             onClick={() => {
@@ -310,12 +352,12 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
         )}
 
         <p className="text-[12.5px] text-[#B3A78F]" style={{ marginBottom: '8px' }}>
-          {filtered.length} recipe{filtered.length !== 1 ? 's' : ''}
+          {sorted.length} recipe{sorted.length !== 1 ? 's' : ''}
         </p>
 
         {/* Recipe cards */}
         <div className="flex flex-col" style={{ gap: '10px' }}>
-          {filtered.map((recipe) => {
+          {sorted.map((recipe) => {
             const colors = MEAL_COLORS[recipe.meal] ?? MEAL_COLORS['Lunch/Dinner']
             return (
               <Link
@@ -376,7 +418,7 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
             )
           })}
 
-          {filtered.length === 0 && (
+          {sorted.length === 0 && (
             <div className="text-center py-16 text-[#B3A78F] text-[14px]">
               No recipes match yet — try clearing a filter.
             </div>

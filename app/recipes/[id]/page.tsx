@@ -33,10 +33,9 @@ export default async function RecipeDetail({
 
   const colors = MEAL_COLORS[recipe.meal] ?? MEAL_COLORS['Lunch/Dinner']
 
-  const stats = [
+    const stats = [
     { label: 'calories', value: String(recipe.calories) },
     { label: 'protein', value: `${recipe.protein}g` },
-    { label: 'of cal', value: `${proteinPct}%` },
     ...(recipe.carbs != null ? [{ label: 'carbs', value: `${recipe.carbs}g` }] : []),
     ...(recipe.fat != null ? [{ label: 'fat', value: `${recipe.fat}g` }] : []),
   ]
@@ -126,6 +125,9 @@ export default async function RecipeDetail({
               </div>
             ))}
           </div>
+          <p style={{ fontSize: '13px', color: colors.text, marginBottom: '18px', marginTop: '-8px' }}>
+  {proteinPct}% of calories from protein
+</p>
 
           <RecipeActions id={id} initialFavorite={!!recipe.favorite} initialMade={!!recipe.made} />
 
