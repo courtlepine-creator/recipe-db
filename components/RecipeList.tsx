@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 
 type Recipe = {
@@ -55,12 +55,16 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
   const [query, setQuery] = useState('')
   const [meal, setMeal] = useState('')
   const [ingredient, setIngredient] = useState('')
+  const [ingredientSearch, setIngredientSearch] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [creator, setCreator] = useState('')
   const [proteinMin, setProteinMin] = useState(0)
   const [calorieRange, setCalorieRange] = useState<[number, number] | null>(null)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [madeFilter, setMadeFilter] = useState<'' | 'made' | 'unmade'>('')
   const [sortBy, setSortBy] = useState('')
+
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const allIngredients = useMemo(() => {
     const names = new Set<string>()
@@ -77,6 +81,22 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
     })
     return Array.from(names).sort()
   }, [recipes])
+
+  const ingredientSuggestions = useMemo(() => {
+    if (!ingredientSearch.trim()) return []
+    const q = ingredientSearch.toLowerCase()
+    return allIngredients.filter((name) => name.toLowerCase().includes(q))
+  }, [allIngredients, ingredientSearch])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const filtered = recipes.filter((r) => {
     if (meal && r.meal !== meal) return false
@@ -120,7 +140,6 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
   return (
     <div className="min-h-screen w-full" style={{ backgroundColor: '#FDF9F3' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px 24px 64px' }}>
-        {/* Header */}
         <div style={{ marginBottom: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '4px' }}>
             <Link
@@ -155,7 +174,6 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
           </div>
         </div>
 
-        {/* Search */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
           <div className="relative">
             <svg
@@ -173,37 +191,85 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-white border border-[#EADFCB] rounded-lg placeholder:text-[#B3A78F] focus:outline-none focus:ring-2 focus:ring-[#7C4DFF]/20 focus:border-[#7C4DFF]"
-              style={{ paddingLeft: '32px', paddingRight: '14px', paddingTop: '8px', paddingBottom: '8px', fontSize: '13.5px' }}
+              style={{ paddingLeft: '32px', paddingRight: '14px', paddingTop: '8px', paddingBottom: '8px', fontSize: '13.5px', color: '#2B2620' }}
             />
           </div>
 
-          <div className="relative">
+          <div className="relative" ref={wrapperRef}>
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#B3A78F]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
+              style={{ zIndex: 1 }}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8 2 5 6 5 10c0 5 4 9 7 12 3-3 7-7 7-12 0-4-3-8-7-8Z" />
             </svg>
-            <select
-              value={ingredient}
-              onChange={(e) => setIngredient(e.target.value)}
-              className="w-full bg-white border border-[#EADFCB] rounded-lg text-[#5C5240] focus:outline-none focus:ring-2 focus:ring-[#7C4DFF]/20 appearance-none"
-              style={{ paddingLeft: '32px', paddingRight: '14px', paddingTop: '8px', paddingBottom: '8px', fontSize: '13.5px' }}
-            >
-              <option value="">Have an ingredient to use up? (any)</option>
-              {allIngredients.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+
+            {ingredient ? (
+              <div
+                className="w-full bg-white border rounded-lg flex items-center justify-between"
+                style={{ borderColor: '#7C4DFF', paddingLeft: '32px', paddingRight: '10px', paddingTop: '8px', paddingBottom: '8px' }}
+              >
+                <span style={{ fontSize: '13.5px', color: '#2B2620' }}>Using up: {ingredient}</span>
+                <button
+                  onClick={() => {
+                    setIngredient('')
+                    setIngredientSearch('')
+                  }}
+                  style={{ fontSize: '13px', color: '#B3A78F', padding: '2px 6px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <input
+                placeholder="Have an ingredient to use up? Start typing..."
+                value={ingredientSearch}
+                onChange={(e) => {
+                  setIngredientSearch(e.target.value)
+                  setShowSuggestions(true)
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                className="w-full bg-white border border-[#EADFCB] rounded-lg placeholder:text-[#B3A78F] focus:outline-none focus:ring-2 focus:ring-[#7C4DFF]/20 focus:border-[#7C4DFF]"
+                style={{ paddingLeft: '32px', paddingRight: '14px', paddingTop: '8px', paddingBottom: '8px', fontSize: '13.5px', color: '#2B2620' }}
+              />
+            )}
+
+            {showSuggestions && !ingredient && ingredientSuggestions.length > 0 && (
+              <div
+                className="absolute w-full bg-white border border-[#EADFCB] rounded-lg shadow-md"
+                style={{ top: 'calc(100% + 4px)', zIndex: 20, maxHeight: '220px', overflowY: 'auto' }}
+              >
+                {ingredientSuggestions.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setIngredient(name)
+                      setIngredientSearch('')
+                      setShowSuggestions(false)
+                    }}
+                    className="w-full text-left hover:bg-[#F4EFE4]"
+                    style={{ padding: '9px 14px', fontSize: '13.5px', color: '#2B2620' }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showSuggestions && !ingredient && ingredientSearch.trim() && ingredientSuggestions.length === 0 && (
+              <div
+                className="absolute w-full bg-white border border-[#EADFCB] rounded-lg shadow-md"
+                style={{ top: 'calc(100% + 4px)', zIndex: 20, padding: '10px 14px', fontSize: '13px', color: '#B3A78F' }}
+              >
+                No ingredients match "{ingredientSearch}"
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Meal pills + protein/calorie filters */}
         <div className="flex flex-wrap" style={{ gap: '6px', marginBottom: '6px' }}>
           {MEALS.map((m) => {
             const c = MEAL_COLORS[m]
@@ -258,7 +324,6 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
           </select>
         </div>
 
-        {/* Creator + favorites/made filters */}
         <div className="flex flex-wrap" style={{ gap: '6px', marginBottom: '6px' }}>
           <select
             value={creator}
@@ -317,7 +382,6 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
           </button>
         </div>
 
-        {/* Sort */}
         <div style={{ marginBottom: '8px' }}>
           <select
             value={sortBy}
@@ -338,6 +402,7 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
             onClick={() => {
               setMeal('')
               setIngredient('')
+              setIngredientSearch('')
               setCreator('')
               setProteinMin(0)
               setCalorieRange(null)
@@ -355,7 +420,6 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
           {sorted.length} recipe{sorted.length !== 1 ? 's' : ''}
         </p>
 
-        {/* Recipe cards */}
         <div className="flex flex-col" style={{ gap: '10px' }}>
           {sorted.map((recipe) => {
             const colors = MEAL_COLORS[recipe.meal] ?? MEAL_COLORS['Lunch/Dinner']
