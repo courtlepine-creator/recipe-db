@@ -473,10 +473,11 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
                     {recipe.name}
                   </h2>
                   <p className="text-[12.5px] text-[#8A7F6C]">
-                    {recipe.calories} cal · {recipe.protein}g protein · {proteinPct(recipe)}% of cal
+                    {recipe.calories} cal · {recipe.protein}g protein
                     {recipe.carbs != null && ` · ${recipe.carbs}g carbs`}
                     {recipe.fat != null && ` · ${recipe.fat}g fat`}
-                  </p>
+                    {` · ${proteinPct(recipe)}% of calories from protein`}
+</p>
                 </div>
               </Link>
             )
