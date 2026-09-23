@@ -466,8 +466,12 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
                     >
                       {recipe.meal}
                     </span>
-                    {recipe.favorite && <span style={{ fontSize: '12px' }}>★</span>}
-                    {recipe.made && <span style={{ fontSize: '12px' }}>✓</span>}
+                    {recipe.favorite && (
+                      <span style={{ fontSize: '12px', color: '#B25A45' }}>{'\u2605\uFE0E'}</span>
+                    )}
+                     {recipe.made && (
+                      <span style={{ fontSize: '12px', color: '#5C6B4B' }}>{'\u2713\uFE0E'}</span>
+                 )}
                   </div>
                   <h2 className="font-semibold text-[15px] text-[#2B2620] leading-snug" style={{ marginBottom: '4px' }}>
                     {recipe.name}
