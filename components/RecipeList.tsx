@@ -42,6 +42,8 @@ const SORT_OPTIONS = [
   { label: 'Carbs: High to Low', value: 'carbs-desc' },
   { label: 'Fat: Low to High', value: 'fat-asc' },
   { label: 'Fat: High to Low', value: 'fat-desc' },
+  { label: '% Protein of Cal: Low to High', value: 'proteinpct-asc' },
+  { label: '% Protein of Cal: High to Low', value: 'proteinpct-desc' },
 ]
 
 const MEAL_COLORS: Record<string, { stripe: string; bg: string; text: string }> = {
@@ -116,17 +118,17 @@ export default function RecipeList({ recipes }: { recipes: Recipe[] }) {
   })
 
   const sorted = useMemo(() => {
-    if (!sortBy) return filtered
-    const [field, direction] = sortBy.split('-') as [
-      'calories' | 'protein' | 'carbs' | 'fat',
-      'asc' | 'desc'
-    ]
-    return [...filtered].sort((a, b) => {
-      const aVal = a[field] ?? 0
-      const bVal = b[field] ?? 0
-      return direction === 'asc' ? aVal - bVal : bVal - aVal
-    })
-  }, [filtered, sortBy])
+  if (!sortBy) return filtered
+  const [field, direction] = sortBy.split('-') as [
+    'calories' | 'protein' | 'carbs' | 'fat' | 'proteinpct',
+    'asc' | 'desc'
+  ]
+  return [...filtered].sort((a, b) => {
+    const aVal = field === 'proteinpct' ? proteinPct(a) : a[field] ?? 0
+    const bVal = field === 'proteinpct' ? proteinPct(b) : b[field] ?? 0
+    return direction === 'asc' ? aVal - bVal : bVal - aVal
+  })
+}, [filtered, sortBy])
 
   const activeFilterCount =
     (meal ? 1 : 0) +
